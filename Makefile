@@ -2,11 +2,11 @@ SHELL:=/bin/bash
 GO = go
 GO_VET_OPTS = -v
 GO_TEST_OPTS = -v -race
-GO_FMT = gofumpt
+GO_FMT = $(GO) tool gofumpt
 GO_FMT_OPTS = -l -w
-GO_IMPORTS = goimports
+GO_IMPORTS = $(GO) tool goimports
 GO_IMPORTS_OPTS = -w -local github.com/chez-shanpu/jbuntai
-STATIC_CHECK = staticcheck
+STATIC_CHECK = $(GO) tool staticcheck
 
 .PHONY: fmt
 fmt:
