@@ -30,4 +30,5 @@ go.work.sum
 
 ### User-specific files
 bin/
+dist/
 config.yaml

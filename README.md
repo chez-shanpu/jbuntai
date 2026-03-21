@@ -208,7 +208,3 @@ make check       # vet + check-diff + test
 make check-all   # check + E2Eテスト
 make clean       # ビルド成果物の削除
 ```
-
-## ライセンス
-
-TBD
