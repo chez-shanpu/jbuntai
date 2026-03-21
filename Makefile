@@ -49,8 +49,12 @@ clean:
 test-e2e:
 	@$(MAKE) -C test test
 
+.PHONY: check-goreleaser
+check-goreleaser:
+	goreleaser check
+
 .PHONY: check
-check: vet check-diff test
+check: vet check-diff test check-goreleaser
 
 .PHONY: check-all
 check-all: check build test-e2e
