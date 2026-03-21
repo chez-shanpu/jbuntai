@@ -1,0 +1,24 @@
+# jbuntai configuration
+# Place this file at ~/.config/jbuntai/config.yaml
+
+# Maximum consecutive kanji characters before inserting a boundary.
+# Default: 5
+max_kanji_run: 5
+
+# LLM settings for disambiguation and finishing passes.
+llm:
+  # Use LLM for word boundary disambiguation.
+  # Default: true
+  disambiguate: true
+
+  # Model for disambiguation (e.g. "haiku", "sonnet").
+  # Default: "haiku"
+  disambiguate_model: "haiku"
+
+  # Use LLM for finishing pass (polishing output).
+  # Default: true
+  finish: true
+
+  # Model for finishing (e.g. "haiku", "sonnet").
+  # Default: "sonnet"
+  finish_model: "sonnet"
