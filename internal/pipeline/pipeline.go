@@ -9,7 +9,6 @@ import (
 
 	"github.com/chez-shanpu/jbuntai/internal/config"
 	"github.com/chez-shanpu/jbuntai/internal/llm"
-	claudecodellm "github.com/chez-shanpu/jbuntai/internal/llm/claudecode"
 	"github.com/chez-shanpu/jbuntai/internal/pass"
 	"github.com/chez-shanpu/jbuntai/internal/tokenizer"
 )
@@ -80,10 +79,18 @@ func New(cfg *config.Config, llmOn bool, opts ...Option) (*Pipeline, error) {
 	// Set up LLM components if enabled and not already injected
 	p.logger.Debug("setting up LLM components")
 	if p.llmOn && p.finisher == nil {
-		p.finisher = claudecodellm.NewFinisher(p.cfg)
+		f, err := llm.NewFinisher(p.cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create finisher: %w", err)
+		}
+		p.finisher = f
 	}
 	if p.llmOn && p.disambiguator == nil {
-		p.disambiguator = claudecodellm.NewDisambiguator(p.cfg)
+		d, err := llm.NewDisambiguator(p.cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create disambiguator: %w", err)
+		}
+		p.disambiguator = d
 	}
 
 	return p, nil

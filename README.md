@@ -61,7 +61,10 @@
 
 ### 前提条件
 
-LLM 変換（デフォルト有効）を使うには [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) が必要です。
+LLM 変換（デフォルト有効）を使うには、以下のいずれかが必要です：
+
+- **codex バックエンド（デフォルト）**: ChatGPT サブスクリプション（Plus/Pro/Team）。初回実行時にブラウザで OAuth 認証を行います。
+- **claudecode バックエンド**: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) がインストール・認証済みであること。
 
 ### go install
 
@@ -93,6 +96,9 @@ jbuntai file1.md file2.md
 # ルールベースのみで変換（LLM を無効化）
 echo "本日の会議では検討を行いました。" | jbuntai --llm=false
 
+# Claude Code CLI バックエンドを使用
+echo "本日の会議では検討を行いました。" | jbuntai --backend claudecode
+
 # 出力先をファイルに指定
 jbuntai -o output.md document.md
 
@@ -104,6 +110,7 @@ jbuntai --stats doc.md
 
 | フラグ              | 説明                                                |
 |------------------|---------------------------------------------------|
+| `--backend`      | LLM バックエンド: `codex`（デフォルト）または `claudecode`        |
 | `--llm`          | LLM を使った変換（デフォルト: 有効）。`--llm=false` で無効化          |
 | `--stats`        | 圧縮率の統計情報を標準エラー出力に表示                               |
 | `--output`, `-o` | 出力先ファイルパス（デフォルト: 標準出力）                            |
@@ -112,30 +119,47 @@ jbuntai --stats doc.md
 
 ## LLM 連携
 
-`jbuntai` はデフォルトで Claude Code CLI (`claude -p`) を使い、変換品質を向上させます。LLM には2つの機能があります：
+`jbuntai` はデフォルトで LLM を使い、変換品質を向上させます。LLM には2つの機能があります：
 
 - **曖昧性解消（Disambiguation）**: 軽量モデルで助詞の分類が曖昧なケースを解決します。
 - **仕上げ（Finishing）**: 高性能モデルでルールベースの出力をより自然な情報文体に再構成します。
 
-### 前提条件
+### バックエンド
 
-Claude Code CLI (`claude`) がインストールされ、認証済みである必要があります。API キーの設定は不要です（`claude` CLI 側で認証を管理します）。
+| バックエンド | 説明 | デフォルトモデル |
+|-----------|------|---------------|
+| `codex`（デフォルト） | ChatGPT Responses API（OAuth PKCE 認証） | 曖昧性解消: `gpt-5.4-mini`, 仕上げ: `gpt-5.4` |
+| `claudecode` | Claude Code CLI (`claude -p`) | 曖昧性解消: `haiku`, 仕上げ: `sonnet` |
 
-### セットアップ
+### codex バックエンド（デフォルト）
 
-1. [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) をインストールします。
+ChatGPT サブスクリプション（Plus/Pro/Team）のアカウントで LLM を利用します。
 
-2. そのまま実行します（LLM はデフォルトで有効）：
+1. そのまま実行します（初回はブラウザで認証が開きます）：
 
    ```bash
    echo "会議室で検討を行いました。" | jbuntai
    ```
 
-3. LLM を使わずルールベースのみで変換する場合：
+2. トークンは `~/.config/jbuntai/codex_token.json` に保存され、以降は自動で再利用・リフレッシュされます。
+
+### claudecode バックエンド
+
+[Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) を使用します。
+
+1. Claude Code CLI をインストール・認証します。
+
+2. `--backend claudecode` を指定して実行します：
 
    ```bash
-   echo "会議室で検討を行いました。" | jbuntai --llm=false
+   echo "会議室で検討を行いました。" | jbuntai --backend claudecode
    ```
+
+### LLM を無効化する場合
+
+```bash
+echo "会議室で検討を行いました。" | jbuntai --llm=false
+```
 
 ### LLM の設定
 
@@ -143,8 +167,9 @@ Claude Code CLI (`claude`) がインストールされ、認証済みである�
 
 ```yaml
 llm:
-  disambiguate_model: "haiku"    # 曖昧性解消用モデル
-  finish_model: "sonnet"         # 仕上げ用モデル
+  backend: "codex"               # "codex" or "claudecode"
+  disambiguate_model: ""         # 空 = バックエンドのデフォルト
+  finish_model: ""               # 空 = バックエンドのデフォルト
   disambiguate: true             # 曖昧性解消の有効/無効
   finish: true                   # 仕上げの有効/無効
 ```
@@ -160,8 +185,7 @@ llm:
 ```yaml
 max_kanji_run: 5
 llm:
-  disambiguate_model: "haiku"
-  finish_model: "sonnet"
+  backend: "codex"
   disambiguate: true
   finish: true
 ```
@@ -169,8 +193,9 @@ llm:
 | キー | 説明 | デフォルト |
 |------|------|-----------|
 | `max_kanji_run` | 境界（スペース）を挿入するまでの連続漢字の最大数 | `5` |
-| `llm.disambiguate_model` | 曖昧性解消に使うモデル（`"haiku"`, `"sonnet"` 等） | `"haiku"` |
-| `llm.finish_model` | 仕上げに使うモデル（`"haiku"`, `"sonnet"` 等） | `"sonnet"` |
+| `llm.backend` | LLM バックエンド（`"codex"` または `"claudecode"`） | `"codex"` |
+| `llm.disambiguate_model` | 曖昧性解消に使うモデル（空文字 = バックエンドのデフォルト） | `""` |
+| `llm.finish_model` | 仕上げに使うモデル（空文字 = バックエンドのデフォルト） | `""` |
 | `llm.disambiguate` | LLM 有効時に曖昧性解消を有効化 | `true` |
 | `llm.finish` | LLM 有効時に仕上げを有効化 | `true` |
 
