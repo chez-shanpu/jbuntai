@@ -1,4 +1,4 @@
-package claudecode
+package codex
 
 import (
 	"context"
@@ -9,13 +9,13 @@ import (
 	"github.com/chez-shanpu/jbuntai/internal/llm/prompt"
 )
 
-// disambiguatorImpl implements the Disambiguator interface using Claude Code CLI.
+// disambiguatorImpl implements the Disambiguator interface using the ChatGPT Responses API.
 type disambiguatorImpl struct {
 	client *client
 	model  string
 }
 
-// Disambiguate resolves ambiguous particles using Claude Code CLI.
+// Disambiguate resolves ambiguous particles using the ChatGPT Responses API.
 func (d *disambiguatorImpl) Disambiguate(ctx context.Context, items []llm.AmbiguousItem) ([]llm.DisambiguationResult, error) {
 	if len(items) == 0 {
 		return nil, nil

@@ -12,11 +12,12 @@ func TestDefault(t *testing.T) {
 	if cfg.MaxKanjiRun != 5 {
 		t.Errorf("expected MaxKanjiRun=5, got %d", cfg.MaxKanjiRun)
 	}
-	if cfg.LLM.DisambiguateModel != "haiku" {
-		t.Errorf("expected DisambiguateModel=haiku, got %q", cfg.LLM.DisambiguateModel)
+	// Model defaults are handled by each backend package, not config
+	if cfg.LLM.DisambiguateModel != "" {
+		t.Errorf("expected DisambiguateModel empty, got %q", cfg.LLM.DisambiguateModel)
 	}
-	if cfg.LLM.FinishModel != "sonnet" {
-		t.Errorf("expected FinishModel=sonnet, got %q", cfg.LLM.FinishModel)
+	if cfg.LLM.FinishModel != "" {
+		t.Errorf("expected FinishModel empty, got %q", cfg.LLM.FinishModel)
 	}
 	if !cfg.LLM.IsDisambiguateEnabled() {
 		t.Error("expected Disambiguate=true by default")
@@ -55,9 +56,9 @@ func TestLoad_EmptyLLMSection(t *testing.T) {
 	if !cfg.LLM.IsFinishEnabled() {
 		t.Error("expected Finish to remain true with empty llm section")
 	}
-	// String fields should get defaults
-	if cfg.LLM.DisambiguateModel != "haiku" {
-		t.Errorf("expected DisambiguateModel=haiku, got %q", cfg.LLM.DisambiguateModel)
+	// Model fields remain empty (defaults applied by backend packages)
+	if cfg.LLM.DisambiguateModel != "" {
+		t.Errorf("expected DisambiguateModel empty, got %q", cfg.LLM.DisambiguateModel)
 	}
 }
 

@@ -7,18 +7,22 @@ max_kanji_run: 5
 
 # LLM settings for disambiguation and finishing passes.
 llm:
+  # LLM backend to use: "claudecode" or "codex".
+  # - claudecode: uses Claude Code CLI (requires `claude` command)
+  # - codex: uses ChatGPT Responses API via OAuth PKCE (requires ChatGPT subscription)
+  # Default: "claudecode"
+  backend: "claudecode"
+
   # Use LLM for word boundary disambiguation.
   # Default: true
   disambiguate: true
 
-  # Model for disambiguation (e.g. "haiku", "sonnet").
-  # Default: "haiku"
-  disambiguate_model: "haiku"
+  # Model for disambiguation (empty = backend default).
+  # disambiguate_model: ""
 
   # Use LLM for finishing pass (polishing output).
   # Default: true
   finish: true
 
-  # Model for finishing (e.g. "haiku", "sonnet").
-  # Default: "sonnet"
-  finish_model: "sonnet"
+  # Model for finishing (empty = backend default).
+  # finish_model: ""

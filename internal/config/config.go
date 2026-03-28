@@ -7,6 +7,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Backend name constants.
+const (
+	BackendClaudeCode = "claudecode"
+	BackendCodex      = "codex"
+)
+
 // Config holds the application configuration.
 type Config struct {
 	MaxKanjiRun int       `yaml:"max_kanji_run"`
@@ -15,6 +21,7 @@ type Config struct {
 
 // LLMConfig holds LLM-related configuration.
 type LLMConfig struct {
+	Backend           string `yaml:"backend"` // "claudecode" (default) or "codex"
 	DisambiguateModel string `yaml:"disambiguate_model"`
 	FinishModel       string `yaml:"finish_model"`
 	Disambiguate      *bool  `yaml:"disambiguate"`
@@ -42,10 +49,9 @@ func Default() *Config {
 	return &Config{
 		MaxKanjiRun: 5,
 		LLM: LLMConfig{
-			DisambiguateModel: "haiku",
-			FinishModel:       "sonnet",
-			Disambiguate:      new(true),
-			Finish:            new(true),
+			Backend:      BackendCodex,
+			Disambiguate: new(true),
+			Finish:       new(true),
 		},
 	}
 }
@@ -78,12 +84,8 @@ func Load(path string) (*Config, error) {
 	if cfg.MaxKanjiRun <= 0 {
 		cfg.MaxKanjiRun = 5
 	}
-	if cfg.LLM.DisambiguateModel == "" {
-		cfg.LLM.DisambiguateModel = "haiku"
+	if cfg.LLM.Backend == "" {
+		cfg.LLM.Backend = BackendCodex
 	}
-	if cfg.LLM.FinishModel == "" {
-		cfg.LLM.FinishModel = "sonnet"
-	}
-
 	return cfg, nil
 }

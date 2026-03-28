@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/jbuntai/internal/config"
+	_ "github.com/chez-shanpu/jbuntai/internal/llm/claudecode" // Register claudecode backend
+	_ "github.com/chez-shanpu/jbuntai/internal/llm/codex"      // Register codex backend
 	"github.com/chez-shanpu/jbuntai/internal/pipeline"
 	"github.com/chez-shanpu/jbuntai/internal/postprocess"
 	"github.com/chez-shanpu/jbuntai/internal/preprocess"
@@ -22,11 +24,12 @@ var (
 )
 
 var (
-	flagLLM    bool
-	flagStats  bool
-	flagDebug  bool
-	flagOutput string
-	flagConfig string
+	flagLLM     bool
+	flagStats   bool
+	flagDebug   bool
+	flagOutput  string
+	flagConfig  string
+	flagBackend string
 )
 
 var rootCmd = &cobra.Command{
@@ -44,6 +47,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&flagOutput, "output", "o", "", "Write output to file (default: stdout)")
 	rootCmd.Flags().StringVar(&flagConfig, "config", "", "Path to config file (default: ~/.config/jbuntai/config.yaml)")
 	rootCmd.Flags().BoolVar(&flagDebug, "debug", false, "Print debug logs with timestamps to stderr")
+	rootCmd.Flags().StringVar(&flagBackend, "backend", "", "LLM backend: claudecode or codex (overrides config)")
 }
 
 func Execute() {
@@ -64,6 +68,21 @@ func run(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Load(flagConfig)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Override backend from CLI flag
+	if flagBackend != "" {
+		switch flagBackend {
+		case config.BackendClaudeCode, config.BackendCodex:
+			if cfg.LLM.Backend != flagBackend {
+				cfg.LLM.Backend = flagBackend
+				// Reset models so the new backend applies its own defaults
+				cfg.LLM.DisambiguateModel = ""
+				cfg.LLM.FinishModel = ""
+			}
+		default:
+			return fmt.Errorf("unknown backend %q: must be %q or %q", flagBackend, config.BackendClaudeCode, config.BackendCodex)
+		}
 	}
 
 	logger.Debug("reading input")
