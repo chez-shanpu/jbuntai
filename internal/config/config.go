@@ -21,11 +21,13 @@ type Config struct {
 
 // LLMConfig holds LLM-related configuration.
 type LLMConfig struct {
-	Backend           string `yaml:"backend"` // "claudecode" (default) or "codex"
-	DisambiguateModel string `yaml:"disambiguate_model"`
-	FinishModel       string `yaml:"finish_model"`
-	Disambiguate      *bool  `yaml:"disambiguate"`
-	Finish            *bool  `yaml:"finish"`
+	Backend               string `yaml:"backend"` // "claudecode" (default) or "codex"
+	DisambiguateModel     string `yaml:"disambiguate_model"`
+	DisambiguateReasoning string `yaml:"disambiguate_reasoning"`
+	FinishModel           string `yaml:"finish_model"`
+	FinishReasoning       string `yaml:"finish_reasoning"`
+	Disambiguate          *bool  `yaml:"disambiguate"`
+	Finish                *bool  `yaml:"finish"`
 }
 
 // IsDisambiguateEnabled returns whether disambiguation is enabled (default: true).

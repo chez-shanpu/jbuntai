@@ -36,13 +36,19 @@ func newClient() (*client, error) {
 	}, nil
 }
 
+// reasoningConfig sets the reasoning effort for the model.
+type reasoningConfig struct {
+	Effort string `json:"effort"`
+}
+
 // responsesRequest is the request body for the Responses API.
 type responsesRequest struct {
-	Model        string      `json:"model"`
-	Instructions string      `json:"instructions"`
-	Input        []inputItem `json:"input"`
-	Store        bool        `json:"store"`
-	Stream       bool        `json:"stream"`
+	Model        string           `json:"model"`
+	Instructions string           `json:"instructions"`
+	Input        []inputItem      `json:"input"`
+	Reasoning    *reasoningConfig `json:"reasoning,omitempty"`
+	Store        bool             `json:"store"`
+	Stream       bool             `json:"stream"`
 }
 
 type inputItem struct {
@@ -57,7 +63,7 @@ type contentPart struct {
 }
 
 // run sends a prompt to the Responses API and returns the full text response.
-func (c *client) run(ctx context.Context, model, systemPrompt, userPrompt string) (string, error) {
+func (c *client) run(ctx context.Context, model, reasoningEffort, systemPrompt, userPrompt string) (string, error) {
 	token, err := c.oauth.GetValidToken(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get access token: %w", err)
@@ -82,6 +88,9 @@ func (c *client) run(ctx context.Context, model, systemPrompt, userPrompt string
 		},
 		Store:  false,
 		Stream: true,
+	}
+	if reasoningEffort != "" {
+		reqBody.Reasoning = &reasoningConfig{Effort: reasoningEffort}
 	}
 
 	bodyBytes, err := json.Marshal(reqBody)

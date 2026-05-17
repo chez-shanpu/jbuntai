@@ -10,19 +10,25 @@ llm:
   # LLM backend to use: "claudecode" or "codex".
   # - claudecode: uses Claude Code CLI (requires `claude` command)
   # - codex: uses ChatGPT Responses API via OAuth PKCE (requires ChatGPT subscription)
-  # Default: "claudecode"
-  backend: "claudecode"
+  # Default: "codex"
+  backend: "codex"
 
   # Use LLM for word boundary disambiguation.
   # Default: true
   disambiguate: true
 
-  # Model for disambiguation (empty = backend default).
+  # Model for disambiguation (empty = backend default: claudecode=haiku, codex=gpt-5.4-mini).
   # disambiguate_model: ""
+
+  # Reasoning effort for disambiguation — codex only (none/low/medium/high/xhigh, empty = default: none).
+  # disambiguate_reasoning: ""
 
   # Use LLM for finishing pass (polishing output).
   # Default: true
   finish: true
 
-  # Model for finishing (empty = backend default).
+  # Model for finishing (empty = backend default: claudecode=sonnet, codex=gpt-5.4).
   # finish_model: ""
+
+  # Reasoning effort for finishing — codex only (none/low/medium/high/xhigh, empty = default: low).
+  # finish_reasoning: ""

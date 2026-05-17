@@ -63,6 +63,7 @@ func run(cmd *cobra.Command, args []string) error {
 		level = slog.LevelDebug
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	slog.SetDefault(logger)
 
 	logger.Debug("loading config")
 	cfg, err := config.Load(flagConfig)
