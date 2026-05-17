@@ -8,8 +8,10 @@ import (
 )
 
 const (
-	defaultDisambiguateModel = "gpt-5.4-mini"
-	defaultFinishModel       = "gpt-5.4"
+	defaultDisambiguateModel     = "gpt-5.4-mini"
+	defaultFinishModel           = "gpt-5.4"
+	defaultDisambiguateReasoning = "none"
+	defaultFinishReasoning       = "low"
 )
 
 var (
@@ -35,7 +37,11 @@ func init() {
 		if model == "" {
 			model = defaultDisambiguateModel
 		}
-		return &disambiguatorImpl{client: client, model: model}, nil
+		reasoning := cfg.LLM.DisambiguateReasoning
+		if reasoning == "" {
+			reasoning = defaultDisambiguateReasoning
+		}
+		return &disambiguatorImpl{client: client, model: model, reasoningEffort: reasoning}, nil
 	})
 	llm.RegisterFinisher(config.BackendCodex, func(cfg *config.Config) (llm.Finisher, error) {
 		client, err := getSharedClient()
@@ -46,6 +52,10 @@ func init() {
 		if model == "" {
 			model = defaultFinishModel
 		}
-		return &finisherImpl{client: client, model: model}, nil
+		reasoning := cfg.LLM.FinishReasoning
+		if reasoning == "" {
+			reasoning = defaultFinishReasoning
+		}
+		return &finisherImpl{client: client, model: model, reasoningEffort: reasoning}, nil
 	})
 }

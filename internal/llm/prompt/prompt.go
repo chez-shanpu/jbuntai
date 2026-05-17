@@ -18,16 +18,35 @@ The "answer" must be one of the provided choices for each item.`
 // FinishSystemPrompt is the system prompt for text finishing.
 const FinishSystemPrompt = `You are a Japanese text editor specializing in "情報文体" (information style).
 
-Information style rules:
-- Remove sentence-ending forms (です/ます/だ/である)
-- Replace particles with symbols: > (direction), @ (location), → (result), ∵ (reason), , (sequence), : (quotation), 〜 (range), ・ (parallel)
-- Delete unnecessary particles: は, が (subject), を (before sino-japanese verbs)
-- Use concise, telegram-like expressions
-- Preserve technical accuracy and meaning
-- Keep code blocks and technical terms unchanged
+Compress as aggressively as possible while preserving all factual information. The rule-based pass is intentionally conservative; you must shorten further wherever lossless compression is possible. Stop only when further removal would lose information. Achievable compression varies by sentence — maximize reduction for each sentence independently.
 
-Given the original Japanese text and a rule-based conversion, refine the conversion to produce natural, readable information style text.
-Output ONLY the refined text, no explanations.`
+Symbol set (apply or reinforce):
+- > direction/target (に/へ): place > before the target noun, then a space before the verb: "東京に移動" → ">東京 移動"
+- @ location (で): place @ before the location noun, then a space before the verb: "会議室で議論" → "@会議室 議論"
+- → cause→result chain: use only for clear causation/result, not as a generic particle replacement
+- ∵ reason (ので/ため/から): place ∵ before the reason clause, then a space before the result: "予算不足のため延期" → "∵予算不足 延期"
+- , sequence (て/で connecting verbs): "調べて報告する" → "調べ,報告"
+- : quotation (と言う/と思う): ":X"
+- 〜 range (から…まで): "1月〜3月"
+- ・ parallel (と/や between nouns): "A・B・C"
+
+Deletion rules (apply or reinforce):
+- Drop sentence-ending forms: です/ます/だ/である/ました/ています
+- Drop subject particles: は, が (unless adversative が before 、)
+- Drop object particle: を before sino-japanese verbs
+- Drop sentence-final particles: よ, ね, な, さ
+- Drop non-independent nouns: こと, もの
+
+Aggressive compression rules (NOT applied by the rule-based pass — apply them now):
+- Delete 連体 "の/への" when the compound noun is unambiguous without it; preserve "の" only when it disambiguates adjacent kanji runs
+- Drop "〜について" / "〜に関して" / "〜における" entirely; juxtapose topic with object
+- Drop formal noun "という": "〜という[noun]" → "[noun]"
+- Drop filler adverbs and demonstratives: さらに, また, この, その, それぞれ, 〜的にも, 〜なども
+- Avoid redundant copula or reporting expressions at sentence ends; omit or vary when meaning is clear from context
+- Prefer noun-ending sentences; drop trailing copulas
+- Keep unmodified: headings (## ...), code blocks, URLs, numbers, proper nouns, technical terms
+
+Output ONLY the refined text. No preamble, no explanation, no code fences.`
 
 // FormatDisambiguateInput formats the user prompt for disambiguation.
 func FormatDisambiguateInput(items []llm.AmbiguousItem) (string, error) {
@@ -40,7 +59,10 @@ func FormatDisambiguateInput(items []llm.AmbiguousItem) (string, error) {
 
 // FormatFinishInput formats the user prompt for finishing.
 func FormatFinishInput(original, transformed string) string {
-	return fmt.Sprintf("Original:\n%s\n\nRule-based conversion:\n%s\n\nPlease refine the conversion to natural information style.", original, transformed)
+	return fmt.Sprintf(
+		"Original Japanese:\n%s\n\nRule-based conversion:\n%s",
+		original, transformed,
+	)
 }
 
 // ExtractJSON strips markdown code fences and surrounding text from the response,
