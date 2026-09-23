@@ -11,6 +11,7 @@ import (
 const (
 	BackendClaudeCode = "claudecode"
 	BackendCodex      = "codex"
+	BackendTypesafeAI = "typesafeai"
 )
 
 // Config holds the application configuration.
@@ -21,13 +22,44 @@ type Config struct {
 
 // LLMConfig holds LLM-related configuration.
 type LLMConfig struct {
-	Backend               string `yaml:"backend"` // "claudecode" (default) or "codex"
+	Backend               string `yaml:"backend"`              // "codex" (default) or "claudecode"; used for finishing and, unless DisambiguateBackend is set, disambiguation
+	DisambiguateBackend   string `yaml:"disambiguate_backend"` // overrides Backend for disambiguation only; empty = use Backend
 	DisambiguateModel     string `yaml:"disambiguate_model"`
 	DisambiguateReasoning string `yaml:"disambiguate_reasoning"`
 	FinishModel           string `yaml:"finish_model"`
 	FinishReasoning       string `yaml:"finish_reasoning"`
 	Disambiguate          *bool  `yaml:"disambiguate"`
 	Finish                *bool  `yaml:"finish"`
+}
+
+// EffectiveDisambiguateBackend returns the backend to use for disambiguation:
+// DisambiguateBackend if set, otherwise Backend.
+func (c LLMConfig) EffectiveDisambiguateBackend() string {
+	if c.DisambiguateBackend != "" {
+		return c.DisambiguateBackend
+	}
+	return c.Backend
+}
+
+// OverrideBackends applies CLI backend overrides; an empty name leaves the
+// corresponding setting unchanged. The model of a stage is reset only when
+// that stage's effective backend actually changes, so that the new backend
+// applies its own default model.
+func (c *LLMConfig) OverrideBackends(backend, disambiguateBackend string) {
+	prevFinish := c.Backend
+	prevDisambiguate := c.EffectiveDisambiguateBackend()
+	if backend != "" {
+		c.Backend = backend
+	}
+	if disambiguateBackend != "" {
+		c.DisambiguateBackend = disambiguateBackend
+	}
+	if c.Backend != prevFinish {
+		c.FinishModel = ""
+	}
+	if c.EffectiveDisambiguateBackend() != prevDisambiguate {
+		c.DisambiguateModel = ""
+	}
 }
 
 // IsDisambiguateEnabled returns whether disambiguation is enabled (default: true).

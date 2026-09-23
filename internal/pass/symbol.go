@@ -2,6 +2,7 @@ package pass
 
 import (
 	"github.com/chez-shanpu/jbuntai/internal/config"
+	"github.com/chez-shanpu/jbuntai/internal/particle"
 )
 
 // locationSuffixes are noun suffixes that indicate a place.
@@ -56,7 +57,7 @@ func (p *SymbolPass) Apply(tokens []Token) []Token {
 		case t.Surface() == "で" && t.POSSub1() == "格助詞":
 			// で (格助詞): use disambiguation if available, else heuristic
 			answer := p.getDisambiguation(i)
-			if answer == "location" || (answer == "" && p.isDeLocation(tokens, i)) {
+			if answer == particle.LabelLocation || (answer == "" && p.isDeLocation(tokens, i)) {
 				setPrefixOnNounPhrase(tokens, i, "@")
 				t.SetDeleted(true)
 			}
@@ -64,7 +65,7 @@ func (p *SymbolPass) Apply(tokens []Token) []Token {
 		case t.Surface() == "に" && t.POSSub1() == "格助詞":
 			// に (格助詞): use disambiguation if available, else heuristic
 			answer := p.getDisambiguation(i)
-			if answer == "direction" || (answer == "" && isDirectionTarget(tokens, i)) {
+			if answer == particle.LabelDirection || (answer == "" && isDirectionTarget(tokens, i)) {
 				setPrefixOnNounPhrase(tokens, i, ">")
 				t.SetDeleted(true)
 			}
@@ -87,9 +88,9 @@ func (p *SymbolPass) Apply(tokens []Token) []Token {
 		case t.Surface() == "と" && t.POSSub1() == "格助詞":
 			// と (格助詞): use disambiguation if available, else heuristic
 			answer := p.getDisambiguation(i)
-			if answer == "quotation" || (answer == "" && p.isQuotationTo(tokens, i)) {
+			if answer == particle.LabelQuotation || (answer == "" && p.isQuotationTo(tokens, i)) {
 				t.SetResult(":")
-			} else if answer == "parallel" || (answer == "" && p.isParallelToYa(tokens, i)) {
+			} else if answer == particle.LabelParallel || (answer == "" && p.isParallelToYa(tokens, i)) {
 				t.SetResult("・")
 			}
 

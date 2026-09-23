@@ -66,6 +66,8 @@ LLM 変換（デフォルト有効）を使うには、以下のいずれかが�
 
 - **codex バックエンド（デフォルト）**: ChatGPT サブスクリプション（Plus/Pro/Team）。初回実行時にブラウザで OAuth 認証を行います。
 - **claudecode バックエンド**: [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) がインストール・認証済みであること。
+- **typesafeai バックエンド（曖昧性解消専用）**: [TypeSafe AI](https://typesafe.ai) の API キーを環境変数
+  `TYPESAFE_API_KEY` に設定していること。
 
 ### go install
 
@@ -109,14 +111,15 @@ jbuntai --stats doc.md
 
 ## オプション
 
-| フラグ              | 説明                                                |
-|------------------|---------------------------------------------------|
-| `--backend`      | LLM バックエンド: `codex`（デフォルト）または `claudecode`        |
-| `--llm`          | LLM を使った変換（デフォルト: 有効）。`--llm=false` で無効化          |
-| `--stats`        | 圧縮率の統計情報を標準エラー出力に表示                               |
-| `--output`, `-o` | 出力先ファイルパス（デフォルト: 標準出力）                            |
-| `--config パス`    | 設定ファイルのパス（デフォルト: `~/.config/jbuntai/config.yaml`） |
-| `--debug`        | デバッグログをタイムスタンプ付きで標準エラー出力に表示                       |
+| フラグ                   | 説明                                                                       |
+|--------------------------|----------------------------------------------------------------------------|
+| `--backend`              | LLM バックエンド: `codex`（デフォルト）または `claudecode`。設定ファイルで `disambiguate_backend` を指定している場合、曖昧性解消にはそちらが優先されます |
+| `--disambiguate-backend` | 曖昧性解消のみに使う LLM バックエンド: `claudecode`、`codex`、`typesafeai` |
+| `--llm`                  | LLM を使った変換（デフォルト: 有効）。`--llm=false` で無効化               |
+| `--stats`                | 圧縮率の統計情報を標準エラー出力に表示                                     |
+| `--output`, `-o`         | 出力先ファイルパス（デフォルト: 標準出力）                                 |
+| `--config パス`          | 設定ファイルのパス（デフォルト: `~/.config/jbuntai/config.yaml`）          |
+| `--debug`                | デバッグログをタイムスタンプ付きで標準エラー出力に表示                     |
 
 ## LLM 連携
 
@@ -131,6 +134,7 @@ jbuntai --stats doc.md
 |-----------|------|---------------|
 | `codex`（デフォルト） | ChatGPT Responses API（OAuth PKCE 認証） | 曖昧性解消: `gpt-5.4-mini`, 仕上げ: `gpt-5.4` |
 | `claudecode` | Claude Code CLI (`claude -p`) | 曖昧性解消: `haiku`, 仕上げ: `sonnet` |
+| `typesafeai` | TypeSafe AI System One API（曖昧性解消専用、jev モデル） | 曖昧性解消: `jev-latest` |
 
 ### codex バックエンド（デフォルト）
 
@@ -156,6 +160,19 @@ ChatGPT サブスクリプション（Plus/Pro/Team）のアカウントで LLM 
    echo "会議室で検討を行いました。" | jbuntai --backend claudecode
    ```
 
+### typesafeai バックエンド（曖昧性解消専用）
+
+[TypeSafe AI](https://typesafe.ai) System One API の `jev` モデルで曖昧性解消のみを行います。仕上げ（Finish）には対応していないため、
+`--backend` ではなく `--disambiguate-backend` で指定します。
+
+1. `TYPESAFE_API_KEY` 環境変数に API キーを設定します。
+
+2. `--disambiguate-backend typesafeai` を指定して実行します（仕上げは既存のバックエンド、通常は `codex`、が引き続き担当します）：
+
+   ```bash
+   echo "会議室で検討を行いました。" | jbuntai --disambiguate-backend typesafeai
+   ```
+
 ### LLM を無効化する場合
 
 ```bash
@@ -169,15 +186,20 @@ echo "会議室で検討を行いました。" | jbuntai --llm=false
 ```yaml
 llm:
   backend: "codex"               # "codex" or "claudecode"
+  disambiguate_backend: ""       # 空 = backend と同じ。"claudecode", "codex", "typesafeai" を指定可能
   disambiguate_model: ""         # 空 = バックエンドのデフォルト
   finish_model: ""               # 空 = バックエンドのデフォルト
   disambiguate: true             # 曖昧性解消の有効/無効
   finish: true                   # 仕上げの有効/無効
 ```
 
-- `disambiguate: false` や `finish: false` で個別のステップを無効化できます。
+- `disambiguate_backend` を設定すると、曖昧性解消だけ別バックエンド（例: `typesafeai`）に切り替えられます。仕上げは常に
+  `backend` が使われます。
+- `disambiguate: false` や `finish: false` で個別のステップを無効化できます。無効化したステップのバックエンドは初期化されません
+  （例: `disambiguate: false` なら `TYPESAFE_API_KEY` は不要です）。
 - `--llm=false` を指定した場合、設定に関係なく LLM 呼び出しは行われません。
 - LLM 呼び出しが失敗した場合、ルールベースの結果に自動でフォールバックします。
+  ただし、起動時に検出される設定エラー（ステップが対応していないバックエンド、`TYPESAFE_API_KEY` の未設定など）はエラー終了します。
 
 ## 設定
 
@@ -191,14 +213,15 @@ llm:
   finish: true
 ```
 
-| キー | 説明 | デフォルト |
-|------|------|-----------|
-| `max_kanji_run` | 境界（スペース）を挿入するまでの連続漢字の最大数 | `5` |
-| `llm.backend` | LLM バックエンド（`"codex"` または `"claudecode"`） | `"codex"` |
-| `llm.disambiguate_model` | 曖昧性解消に使うモデル（空文字 = バックエンドのデフォルト） | `""` |
-| `llm.finish_model` | 仕上げに使うモデル（空文字 = バックエンドのデフォルト） | `""` |
-| `llm.disambiguate` | LLM 有効時に曖昧性解消を有効化 | `true` |
-| `llm.finish` | LLM 有効時に仕上げを有効化 | `true` |
+| キー                       | 説明                                                                                   | デフォルト |
+|----------------------------|----------------------------------------------------------------------------------------|------------|
+| `max_kanji_run`            | 境界（スペース）を挿入するまでの連続漢字の最大数                                       | `5`        |
+| `llm.backend`              | LLM バックエンド（`"codex"` または `"claudecode"`）                                    | `"codex"`  |
+| `llm.disambiguate_backend` | 曖昧性解消専用のバックエンド（空文字 = `llm.backend` を使用。`"typesafeai"` も指定可） | `""`       |
+| `llm.disambiguate_model`   | 曖昧性解消に使うモデル（空文字 = バックエンドのデフォルト）                            | `""`       |
+| `llm.finish_model`         | 仕上げに使うモデル（空文字 = バックエンドのデフォルト）                                | `""`       |
+| `llm.disambiguate`         | LLM 有効時に曖昧性解消を有効化                                                         | `true`     |
+| `llm.finish`               | LLM 有効時に仕上げを有効化                                                             | `true`     |
 
 ## アーキテクチャ
 

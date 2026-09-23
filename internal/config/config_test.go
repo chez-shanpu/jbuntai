@@ -117,3 +117,74 @@ func TestLoad_DefaultPath(t *testing.T) {
 		t.Errorf("expected default config, got MaxKanjiRun=%d", cfg.MaxKanjiRun)
 	}
 }
+
+func TestLLMConfig_OverrideBackends(t *testing.T) {
+	tests := []struct {
+		name                    string
+		cfg                     LLMConfig
+		backend                 string
+		disambiguateBackend     string
+		wantBackend             string
+		wantDisambiguateBackend string
+		wantDisambiguateModel   string
+		wantFinishModel         string
+	}{
+		{
+			name:                  "same backend keeps models",
+			cfg:                   LLMConfig{Backend: BackendCodex, DisambiguateModel: "d", FinishModel: "f"},
+			backend:               BackendCodex,
+			wantBackend:           BackendCodex,
+			wantDisambiguateModel: "d",
+			wantFinishModel:       "f",
+		},
+		{
+			name:        "backend change resets both models",
+			cfg:         LLMConfig{Backend: BackendCodex, DisambiguateModel: "d", FinishModel: "f"},
+			backend:     BackendClaudeCode,
+			wantBackend: BackendClaudeCode,
+		},
+		{
+			name:                    "pinned disambiguate backend keeps its model",
+			cfg:                     LLMConfig{Backend: BackendCodex, DisambiguateBackend: BackendTypesafeAI, DisambiguateModel: "jev", FinishModel: "f"},
+			backend:                 BackendClaudeCode,
+			wantBackend:             BackendClaudeCode,
+			wantDisambiguateBackend: BackendTypesafeAI,
+			wantDisambiguateModel:   "jev",
+		},
+		{
+			name:                    "disambiguate backend change resets only its model",
+			cfg:                     LLMConfig{Backend: BackendCodex, DisambiguateModel: "d", FinishModel: "f"},
+			disambiguateBackend:     BackendTypesafeAI,
+			wantBackend:             BackendCodex,
+			wantDisambiguateBackend: BackendTypesafeAI,
+			wantFinishModel:         "f",
+		},
+		{
+			name:                    "both flags keep disambiguate model when its effective backend is unchanged",
+			cfg:                     LLMConfig{Backend: BackendCodex, DisambiguateModel: "d", FinishModel: "f"},
+			backend:                 BackendClaudeCode,
+			disambiguateBackend:     BackendCodex,
+			wantBackend:             BackendClaudeCode,
+			wantDisambiguateBackend: BackendCodex,
+			wantDisambiguateModel:   "d",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := tt.cfg
+			c.OverrideBackends(tt.backend, tt.disambiguateBackend)
+			if c.Backend != tt.wantBackend {
+				t.Errorf("Backend = %q, want %q", c.Backend, tt.wantBackend)
+			}
+			if c.DisambiguateBackend != tt.wantDisambiguateBackend {
+				t.Errorf("DisambiguateBackend = %q, want %q", c.DisambiguateBackend, tt.wantDisambiguateBackend)
+			}
+			if c.DisambiguateModel != tt.wantDisambiguateModel {
+				t.Errorf("DisambiguateModel = %q, want %q", c.DisambiguateModel, tt.wantDisambiguateModel)
+			}
+			if c.FinishModel != tt.wantFinishModel {
+				t.Errorf("FinishModel = %q, want %q", c.FinishModel, tt.wantFinishModel)
+			}
+		})
+	}
+}

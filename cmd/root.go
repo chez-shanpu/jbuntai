@@ -6,13 +6,16 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/chez-shanpu/jbuntai/internal/config"
+	"github.com/chez-shanpu/jbuntai/internal/llm"
 	_ "github.com/chez-shanpu/jbuntai/internal/llm/claudecode" // Register claudecode backend
 	_ "github.com/chez-shanpu/jbuntai/internal/llm/codex"      // Register codex backend
+	_ "github.com/chez-shanpu/jbuntai/internal/llm/typesafeai" // Register typesafeai disambiguate backend
 	"github.com/chez-shanpu/jbuntai/internal/pipeline"
 	"github.com/chez-shanpu/jbuntai/internal/postprocess"
 	"github.com/chez-shanpu/jbuntai/internal/preprocess"
@@ -24,12 +27,13 @@ var (
 )
 
 var (
-	flagLLM     bool
-	flagStats   bool
-	flagDebug   bool
-	flagOutput  string
-	flagConfig  string
-	flagBackend string
+	flagLLM                 bool
+	flagStats               bool
+	flagDebug               bool
+	flagOutput              string
+	flagConfig              string
+	flagBackend             string
+	flagDisambiguateBackend string
 )
 
 var rootCmd = &cobra.Command{
@@ -47,7 +51,8 @@ func init() {
 	rootCmd.Flags().StringVarP(&flagOutput, "output", "o", "", "Write output to file (default: stdout)")
 	rootCmd.Flags().StringVar(&flagConfig, "config", "", "Path to config file (default: ~/.config/jbuntai/config.yaml)")
 	rootCmd.Flags().BoolVar(&flagDebug, "debug", false, "Print debug logs with timestamps to stderr")
-	rootCmd.Flags().StringVar(&flagBackend, "backend", "", "LLM backend: claudecode or codex (overrides config)")
+	rootCmd.Flags().StringVar(&flagBackend, "backend", "", fmt.Sprintf("LLM backend: %s (overrides config; disambiguation still uses disambiguate_backend if set)", strings.Join(llm.FinisherBackends(), ", ")))
+	rootCmd.Flags().StringVar(&flagDisambiguateBackend, "disambiguate-backend", "", fmt.Sprintf("LLM backend for disambiguation only: %s (overrides config and --backend)", strings.Join(llm.DisambiguatorBackends(), ", ")))
 }
 
 func Execute() {
@@ -71,20 +76,14 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Override backend from CLI flag
-	if flagBackend != "" {
-		switch flagBackend {
-		case config.BackendClaudeCode, config.BackendCodex:
-			if cfg.LLM.Backend != flagBackend {
-				cfg.LLM.Backend = flagBackend
-				// Reset models so the new backend applies its own defaults
-				cfg.LLM.DisambiguateModel = ""
-				cfg.LLM.FinishModel = ""
-			}
-		default:
-			return fmt.Errorf("unknown backend %q: must be %q or %q", flagBackend, config.BackendClaudeCode, config.BackendCodex)
-		}
+	// Override backends from CLI flags
+	if flagBackend != "" && !slices.Contains(llm.FinisherBackends(), flagBackend) {
+		return fmt.Errorf("unknown backend %q: must be one of %s", flagBackend, strings.Join(llm.FinisherBackends(), ", "))
 	}
+	if flagDisambiguateBackend != "" && !slices.Contains(llm.DisambiguatorBackends(), flagDisambiguateBackend) {
+		return fmt.Errorf("unknown disambiguate backend %q: must be one of %s", flagDisambiguateBackend, strings.Join(llm.DisambiguatorBackends(), ", "))
+	}
+	cfg.LLM.OverrideBackends(flagBackend, flagDisambiguateBackend)
 
 	logger.Debug("reading input")
 	input, err := readFromArgs(args)
