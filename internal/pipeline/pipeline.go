@@ -9,6 +9,7 @@ import (
 
 	"github.com/chez-shanpu/jbuntai/internal/config"
 	"github.com/chez-shanpu/jbuntai/internal/llm"
+	"github.com/chez-shanpu/jbuntai/internal/particle"
 	"github.com/chez-shanpu/jbuntai/internal/pass"
 	"github.com/chez-shanpu/jbuntai/internal/tokenizer"
 )
@@ -76,16 +77,18 @@ func New(cfg *config.Config, llmOn bool, opts ...Option) (*Pipeline, error) {
 	p.passes = passes
 	p.symbolPass = symbolPass
 
-	// Set up LLM components if enabled and not already injected
+	// Set up LLM components for enabled stages unless already injected.
+	// Disabled stages are not constructed so that their backend
+	// configuration (e.g. API keys) is not required.
 	p.logger.Debug("setting up LLM components")
-	if p.llmOn && p.finisher == nil {
+	if p.llmOn && p.cfg.LLM.IsFinishEnabled() && p.finisher == nil {
 		f, err := llm.NewFinisher(p.cfg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create finisher: %w", err)
 		}
 		p.finisher = f
 	}
-	if p.llmOn && p.disambiguator == nil {
+	if p.llmOn && p.cfg.LLM.IsDisambiguateEnabled() && p.disambiguator == nil {
 		d, err := llm.NewDisambiguator(p.cfg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create disambiguator: %w", err)
@@ -143,18 +146,10 @@ func (p *Pipeline) disambiguateParticles(ctx context.Context, rawLines []string,
 			sentence = rawLines[lineIdx]
 		}
 		for tokenIdx, t := range tokens {
-			if t.Deleted() || !t.IsParticle() {
+			if t.Deleted() || !t.IsParticle() || t.POSSub1() != "格助詞" {
 				continue
 			}
-			var choices []string
-			switch {
-			case t.Surface() == "で" && t.POSSub1() == "格助詞":
-				choices = []string{"location", "means", "other"}
-			case t.Surface() == "に" && t.POSSub1() == "格助詞":
-				choices = []string{"direction", "location", "time", "other"}
-			case t.Surface() == "と" && t.POSSub1() == "格助詞":
-				choices = []string{"quotation", "parallel", "companion", "other"}
-			}
+			choices := particle.CaseParticleLabels(t.Surface())
 			if len(choices) == 0 {
 				continue
 			}

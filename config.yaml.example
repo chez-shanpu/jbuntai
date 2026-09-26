@@ -13,11 +13,18 @@ llm:
   # Default: "codex"
   backend: "codex"
 
+  # Backend for disambiguation only: "claudecode", "codex", or "typesafeai".
+  # - typesafeai: uses TypeSafe AI System One API (jev model; requires TYPESAFE_API_KEY).
+  #   Disambiguation only — cannot be used as `backend`.
+  # Finishing always uses `backend`.
+  # Default: "" (same as backend)
+  # disambiguate_backend: ""
+
   # Use LLM for word boundary disambiguation.
   # Default: true
   disambiguate: true
 
-  # Model for disambiguation (empty = backend default: claudecode=haiku, codex=gpt-5.4-mini).
+  # Model for disambiguation (empty = backend default: claudecode=haiku, codex=gpt-5.4-mini, typesafeai=jev-latest).
   # disambiguate_model: ""
 
   # Reasoning effort for disambiguation — codex only (none/low/medium/high/xhigh, empty = default: none).

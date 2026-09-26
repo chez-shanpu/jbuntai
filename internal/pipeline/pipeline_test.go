@@ -193,3 +193,26 @@ func TestPipeline_Disambiguator_NotCalled_WhenOff(t *testing.T) {
 		t.Fatal("Disambiguator should not be called when disambiguate is disabled")
 	}
 }
+
+func TestNew_DisabledStagesAreNotConstructed(t *testing.T) {
+	cfg := config.Default()
+	// Unregistered backends would fail construction if the stages were built.
+	cfg.LLM.Backend = "unregistered"
+	cfg.LLM.DisambiguateBackend = "unregistered"
+	cfg.LLM.Disambiguate = new(false)
+	cfg.LLM.Finish = new(false)
+
+	if _, err := New(cfg, true); err != nil {
+		t.Fatalf("expected disabled stages to be skipped, got error: %v", err)
+	}
+}
+
+func TestNew_EnabledStageWithUnknownBackendFails(t *testing.T) {
+	cfg := config.Default()
+	cfg.LLM.Backend = "unregistered"
+	cfg.LLM.Disambiguate = new(false)
+
+	if _, err := New(cfg, true); err == nil {
+		t.Fatal("expected error for enabled finish stage with unknown backend")
+	}
+}
