@@ -9,7 +9,8 @@ max_kanji_run: 5
 llm:
   # LLM backend to use: "claudecode" or "codex".
   # - claudecode: uses Claude Code CLI (requires `claude` command)
-  # - codex: uses ChatGPT Responses API via OAuth PKCE (requires ChatGPT subscription)
+  # - codex: starts Codex CLI app-server for each request.
+  #   Install `codex`, ensure it is on PATH, and sign in with `codex login`.
   # Default: "codex"
   backend: "codex"
 
@@ -24,18 +25,20 @@ llm:
   # Default: true
   disambiguate: true
 
-  # Model for disambiguation (empty = backend default: claudecode=haiku, codex=gpt-5.4-mini, typesafeai=jev-latest).
+  # Model for disambiguation (empty = backend default: claudecode=haiku, codex=gpt-6-luna, typesafeai=jev-latest).
   # disambiguate_model: ""
 
-  # Reasoning effort for disambiguation — codex only (none/low/medium/high/xhigh, empty = default: none).
+  # Reasoning effort for disambiguation — codex only.
+  # none/low/medium/high/xhigh/max; empty = default: none.
   # disambiguate_reasoning: ""
 
   # Use LLM for finishing pass (polishing output).
   # Default: true
   finish: true
 
-  # Model for finishing (empty = backend default: claudecode=sonnet, codex=gpt-5.4).
+  # Model for finishing (empty = backend default: claudecode=sonnet, codex=gpt-6-sol).
   # finish_model: ""
 
-  # Reasoning effort for finishing — codex only (none/low/medium/high/xhigh, empty = default: low).
+  # Reasoning effort for finishing — codex only.
+  # none/low/medium/high/xhigh/max; empty = default: low.
   # finish_reasoning: ""

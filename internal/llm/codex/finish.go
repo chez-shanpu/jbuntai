@@ -8,14 +8,14 @@ import (
 	"github.com/chez-shanpu/jbuntai/internal/llm/prompt"
 )
 
-// finisherImpl implements the Finisher interface using the ChatGPT Responses API.
+// finisherImpl implements the Finisher interface using Codex app-server.
 type finisherImpl struct {
 	client          *client
 	model           string
 	reasoningEffort string
 }
 
-// Finish refines rule-based conversion using the ChatGPT Responses API.
+// Finish refines rule-based conversion using Codex app-server.
 func (f *finisherImpl) Finish(ctx context.Context, original, transformed string) (string, error) {
 	slog.Default().Debug("codex finisher", "model", f.model, "reasoning_effort", f.reasoningEffort)
 	userPrompt := prompt.FormatFinishInput(original, transformed)
