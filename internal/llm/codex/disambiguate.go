@@ -2,7 +2,7 @@ package codex
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"log/slog"
 
@@ -10,14 +10,14 @@ import (
 	"github.com/chez-shanpu/jbuntai/internal/llm/prompt"
 )
 
-// disambiguatorImpl implements the Disambiguator interface using the ChatGPT Responses API.
+// disambiguatorImpl implements the Disambiguator interface using Codex app-server.
 type disambiguatorImpl struct {
 	client          *client
 	model           string
 	reasoningEffort string
 }
 
-// Disambiguate resolves ambiguous particles using the ChatGPT Responses API.
+// Disambiguate resolves ambiguous particles using Codex app-server.
 func (d *disambiguatorImpl) Disambiguate(ctx context.Context, items []llm.AmbiguousItem) ([]llm.DisambiguationResult, error) {
 	if len(items) == 0 {
 		return nil, nil
@@ -34,10 +34,15 @@ func (d *disambiguatorImpl) Disambiguate(ctx context.Context, items []llm.Ambigu
 		return nil, fmt.Errorf("disambiguate failed: %w", err)
 	}
 
+	return parseResults(responseText)
+}
+
+// parseResults decodes the JSON array of results in the model's response.
+func parseResults(responseText string) ([]llm.DisambiguationResult, error) {
 	var results []llm.DisambiguationResult
-	if err := json.Unmarshal([]byte(prompt.ExtractJSON(responseText)), &results); err != nil {
+	// Match field names case-insensitively, as encoding/json (v1) did.
+	if err := json.Unmarshal([]byte(prompt.ExtractJSON(responseText)), &results, json.MatchCaseInsensitiveNames(true)); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
-
 	return results, nil
 }
